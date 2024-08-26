@@ -13,8 +13,8 @@ function App() {
                     path="/" 
                     element={
                         <>
-                            <Navbar />
-                            <Home />
+                            <div className='flex'><Navbar />
+                            <Home /></div>
                         </>
                     } 
                 />
