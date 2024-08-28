@@ -11,12 +11,12 @@ const Navbar = () => {
     return (
         <div className="block">
             {/* Sidebar for Desktop */}
-            <div className='bg-blue-600 p-4 text-center shadow-md transform h-[100vh]'>
-                <h1 className="text-white text-2xl font-bold mt-4 mb-4">GradeSim</h1>
+            <div className='bg-[#1f325e] p-4 text-center shadow-md transform h-[100vh]'>
+                <h1 className="text-white text-2xl font-bold mt-4 mb-8">GradeSim</h1>
                 <nav className="space-y-2">
-                    <Link to="/" className="text-white block px-4 md:px-16 py-2 hover:bg-blue-900" >Dashboard</Link>
-                    <Link to="/about" className="text-white block px-4 md:px-16 py-2 hover:bg-blue-900">About</Link>
-                    <Link to="/contact" className="text-white block px-4 md:px-16 py-2 hover:bg-blue-900">Logout</Link>
+                    <Link to="/" className="text-white block px-4 md:px-16 py-2 hover:bg-[#111827]" >Dashboard</Link>
+                    <Link to="/about" className="text-white block px-4 md:px-16 py-2 hover:bg-[#111827]">About</Link>
+                    <Link to="/contact" className="text-white block px-4 md:px-16 py-2 hover:bg-[#111827]">Logout</Link>
                 </nav>
             </div>
 
