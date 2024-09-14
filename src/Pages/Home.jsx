@@ -5,28 +5,61 @@ const Home = () => {
     const [newTableName, setNewTableName] = useState('');
 
     const addTable = () => {
-        setTables([...tables, { name: newTableName, rows: 4, cols: 4, data: Array(4).fill(Array(4).fill('')) }]);
+        if (newTableName.trim() === '') {
+            alert('Please enter a table name');
+            return;
+        }
+        setTables([...tables, { name: newTableName, rows: 4, cols: 4, colNames: Array(4).fill('Column'), data: Array(4).fill(Array(4).fill('')) }]);
         setNewTableName('');
     };
 
     const addRow = (tableIndex) => {
-        const newTables = [...tables];
-        newTables[tableIndex].rows += 1;
-        newTables[tableIndex].data.push(Array(newTables[tableIndex].cols).fill(''));
-        setTables(newTables);
+        setTables(prevTables => {
+            const newTables = [...prevTables];
+            newTables[tableIndex] = {
+                ...newTables[tableIndex],
+                rows: newTables[tableIndex].rows + 1,
+                data: [...newTables[tableIndex].data, Array(newTables[tableIndex].cols).fill('')]
+            };
+            return newTables;
+        });
     };
 
     const addColumn = (tableIndex) => {
-        const newTables = [...tables];
-        newTables[tableIndex].cols += 1;
-        newTables[tableIndex].data = newTables[tableIndex].data.map(row => [...row, '']);
-        setTables(newTables);
+        setTables(prevTables => {
+            const newTables = [...prevTables];
+            newTables[tableIndex] = {
+                ...newTables[tableIndex],
+                cols: newTables[tableIndex].cols + 1,
+                colNames: [...newTables[tableIndex].colNames, 'Column'],
+                data: newTables[tableIndex].data.map(row => [...row, ''])
+            };
+            return newTables;
+        });
     };
 
     const handleCellChange = (tableIndex, rowIndex, colIndex, value) => {
-        const newTables = [...tables];
-        newTables[tableIndex].data[rowIndex][colIndex] = value;
-        setTables(newTables);
+        setTables(prevTables => {
+            const newTables = [...prevTables];
+            newTables[tableIndex] = {
+                ...newTables[tableIndex],
+                data: newTables[tableIndex].data.map((row, rIdx) => 
+                    rIdx === rowIndex ? row.map((cell, cIdx) => cIdx === colIndex ? value : cell) : row
+                )
+            };
+            return newTables;
+        });
+    };
+
+    const handleColNameChange = (tableIndex, colIndex, value) => {
+        setTables(prevTables => {
+            const newTables = [...prevTables];
+            newTables[tableIndex] = {
+                ...newTables[tableIndex],
+                colNames: newTables[tableIndex].colNames.map((colName, cIdx) => cIdx === colIndex ? value : colName)
+            };
+            return newTables;
+        });
     };
 
     return (
@@ -45,11 +78,18 @@ const Home = () => {
             {tables.map((table, tableIndex) => (
                 <div key={tableIndex} className="mt-8">
                     <h2 className="text-2xl font-bold">{table.name}</h2>
-                    <table className="mt-4 w-full border-collapse border border-gray-300">
+                    <table className="w-full mt-4 border-collapse">
                         <thead>
                             <tr>
-                                {Array.from({ length: table.cols }).map((_, colIndex) => (
-                                    <th key={colIndex} className="border border-gray-300 p-2">Column {colIndex + 1}</th>
+                                {table.colNames.map((colName, colIndex) => (
+                                    <th key={colIndex} className="border p-2">
+                                        <input
+                                            type="text"
+                                            value={colName}
+                                            onChange={(e) => handleColNameChange(tableIndex, colIndex, e.target.value)}
+                                            className="w-full p-1 border border-gray-300 rounded"
+                                        />
+                                    </th>
                                 ))}
                             </tr>
                         </thead>
@@ -57,7 +97,7 @@ const Home = () => {
                             {table.data.map((row, rowIndex) => (
                                 <tr key={rowIndex}>
                                     {row.map((cell, colIndex) => (
-                                        <td key={colIndex} className="border border-gray-300 p-2">
+                                        <td key={colIndex} className="border p-2">
                                             <input
                                                 type="text"
                                                 value={cell}
@@ -70,12 +110,12 @@ const Home = () => {
                             ))}
                         </tbody>
                     </table>
-                    <button onClick={() => addRow(tableIndex)} className="mt-2 p-2 bg-blue-500 text-white rounded">Add Row</button>
+                    <button onClick={() => addRow(tableIndex)} className="mt-2 p-2 bg-green-500 text-white rounded">Add Row</button>
                     <button onClick={() => addColumn(tableIndex)} className="mt-2 ml-2 p-2 bg-green-500 text-white rounded">Add Column</button>
                 </div>
             ))}
         </div>
     );
-}
+};
 
 export default Home;
