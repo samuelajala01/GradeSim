@@ -9,7 +9,7 @@ const Home = () => {
             alert('Please enter a table name');
             return;
         }
-        setTables([...tables, { name: newTableName, rows: 4, cols: 4, colNames: ['Course', 'Course Unit', 'Grade', 'Other'], data: Array(4).fill(Array(4).fill('')) }]);
+        setTables([...tables, { name: newTableName, rows: 4, cols: 4, colNames: ['Course', 'Course Unit', 'Grade', 'Other'], data: Array(1).fill(Array(4).fill('')) }]);
         setNewTableName('');
     };
 
@@ -60,7 +60,7 @@ const Home = () => {
     return (
         <div className="w-[100vw] m-8 sm:m-12 md:m-20">
             <h1 className='text-4xl font-bold mb-8'>Welcome John,</h1>
-            <div className="mt-4">
+            <div className="mt-4 mb-8">
                 <input
                     type="text"
                     value={newTableName}
@@ -74,14 +74,14 @@ const Home = () => {
                 const { totalUnits, totalGrades } = calculateTotals(table);
                 return (
                     <div key={tableIndex} className="mt-8">
-                        <h2 className="text-2xl font-bold">{table.name}</h2>
+                        <h2 className="text-2xl font-bold pl-2">{table.name}</h2>
                         <table className="w-full mt-4 border-collapse">
                             <thead>
                                 <tr>
                                     <th className="border p-2">Course</th>
                                     <th className="border p-2">Course Unit</th>
-                                    <th className="border p-2">Grade</th>
                                     <th className="border p-2">Other</th>
+                                    <th className="border p-2">Grade</th>
                                 </tr>
                             </thead>
                             <tbody>
