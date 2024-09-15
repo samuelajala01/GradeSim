@@ -3,6 +3,8 @@ import React, { useState } from 'react';
 const Home = () => {
     const [tables, setTables] = useState([]);
     const [newTableName, setNewTableName] = useState('');
+    const [deleteTableIndex, setDeleteTableIndex] = useState(null); // Track which table to delete
+    const [showConfirmModal, setShowConfirmModal] = useState(false); // Show modal
 
     const addTable = () => {
         if (newTableName.trim() === '') {
@@ -31,17 +33,44 @@ const Home = () => {
         });
     };
 
-    const addColumn = (tableIndex) => {
+    // const addColumn = (tableIndex) => {
+    //     setTables(prevTables => {
+    //         const newTables = [...prevTables];
+    //         newTables[tableIndex] = {
+    //             ...newTables[tableIndex],
+    //             cols: newTables[tableIndex].cols + 1,
+    //             colNames: [...newTables[tableIndex].colNames, `New Column ${newTables[tableIndex].cols - 3}`],
+    //             data: newTables[tableIndex].data.map(row => [...row, ''])
+    //         };
+    //         return newTables;
+    //     });
+    // };
+
+    const deleteRow = (tableIndex, rowIndex) => {
         setTables(prevTables => {
             const newTables = [...prevTables];
             newTables[tableIndex] = {
                 ...newTables[tableIndex],
-                cols: newTables[tableIndex].cols + 1,
-                colNames: [...newTables[tableIndex].colNames, 'New Column'],
-                data: newTables[tableIndex].data.map(row => [...row, ''])
+                rows: newTables[tableIndex].rows - 1,
+                data: newTables[tableIndex].data.filter((_, idx) => idx !== rowIndex)
             };
+    
+            // If no rows remain after deletion, delete the table
+            if (newTables[tableIndex].data.length === 0) {
+                return newTables.filter((_, index) => index !== tableIndex);
+            }
+    
             return newTables;
         });
+    };
+    
+
+    const deleteTable = () => {
+        setTables(prevTables => {
+            return prevTables.filter((_, index) => index !== deleteTableIndex);
+        });
+        setShowConfirmModal(false);
+        setDeleteTableIndex(null);
     };
 
     const handleCellChange = (tableIndex, rowIndex, colIndex, value) => {
@@ -52,7 +81,7 @@ const Home = () => {
                     const newRow = [...row];
                     newRow[colIndex] = value;
 
-                    // If the column index is 1 (Course Unit) or 2 (Grade), update Score
+                    // Update Score column based on Course Unit and Grade
                     if (colIndex === 1 || colIndex === 2) {
                         const unit = parseFloat(newRow[1]) || 0;
                         const grade = parseFloat(newRow[2]) || 0;
@@ -96,9 +125,10 @@ const Home = () => {
             {tables.map((table, tableIndex) => {
                 const { totalUnits, totalGrades, totalScore } = calculateTotals(table);
                 return (
-                    <div key={tableIndex} className="mt-8">
+                    <div key={tableIndex} className="mt-8 bg-[#1f325e] p-4 rounded-md">
                         <h2 className="text-2xl font-bold pl-2">{table.name}</h2>
-                        <table className="w-full mt-4 border-collapse">
+                        
+                        <table className="w-full mt-4 border-collapse mb-8">
                             <thead>
                                 <tr>
                                     {table.colNames.map((colName, colIndex) => (
@@ -128,6 +158,14 @@ const Home = () => {
                                                 )}
                                             </td>
                                         ))}
+                                        <td>
+                                            <button
+                                                onClick={() => deleteRow(tableIndex, rowIndex)}
+                                                className="p-1 bg-red-500 text-white rounded"
+                                            >
+                                                X
+                                            </button>
+                                        </td>
                                     </tr>
                                 ))}
                                 <tr className='text-center'>
@@ -139,10 +177,40 @@ const Home = () => {
                             </tbody>
                         </table>
                         <button onClick={() => addRow(tableIndex)} className="mt-2 p-2 bg-green-500 text-white rounded">Add Row</button>
-                        <button onClick={() => addColumn(tableIndex)} className="mt-2 ml-2 p-2 bg-green-500 text-white rounded">Add Column</button>
+                        {/* <button onClick={() => addColumn(tableIndex)} className="mt-2 ml-2 p-2 bg-green-500 text-white rounded">Add Column</button> */}
+                        <button 
+                            onClick={() => { setDeleteTableIndex(tableIndex); setShowConfirmModal(true); }} 
+                            className="mt-2 ml-2 p-2 bg-red-500 text-white rounded"
+                        >
+                            Delete Table
+                        </button>
                     </div>
                 );
             })}
+
+            {/* Confirmation Modal */}
+            {showConfirmModal && (
+                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+                    <div className="bg-[#111827] p-4 rounded shadow-lg w-1/3">
+                        <h3 className="text-lg font-bold mb-4 tr">Confirm Deletion</h3>
+                        <p className='text-red-500'>Are you sure you want to delete this table? This action cannot be undone.</p>
+                        <div className="mt-4 flex justify-end">
+                            <button
+                                onClick={() => setShowConfirmModal(false)}
+                                className="px-4 py-2 bg-gray-300 text-black rounded mr-2"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={deleteTable}
+                                className="px-4 py-2 bg-red-500 text-white rounded"
+                            >
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
