@@ -1,67 +1,72 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Home from './Pages/Home';
-import Login from './Pages/Login';
-import Navbar from './Components/Navbar';
+import React from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Outlet,
+  Navigate,
+} from "react-router-dom";
+import Home from "./Pages/Home";
+import Login from "./Pages/Login";
+import Navbar from "./Components/Navbar";
+import { AuthProvider, useAuth } from "./context/AuthContext";
+import CreateAcc from "./Pages/CreateAcc";
+
+function ProtectedRoute() {
+  const { currentUser, loading } = useAuth();
+
+  // Add loading state
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  // If no current user, redirect to login
+  if (!currentUser) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // If user exists, render the child routes
+  return <Outlet />;
+}
 
 function App() {
-    return (
-        <Router>
-            <div className="flex h-screen">
-                <Navbar className="h-full" />
-                <div className="flex flex-grow overflow-auto">
-                    <Routes>
-                        {/* Home Page with Navbar */}
-                        <Route 
-                            path="/" 
-                            element={<Home />} 
-                        />
-                        {/* Login Page */}
-                        <Route 
-                            path="/login" 
-                            element={<Login />} 
-                        />
-                        <Route 
-                            path="/other" 
-                            element={<h1>This page does not have a Navbar</h1>} 
-                        />
-                    </Routes>
-                </div>
-            </div>
-        </Router>
-    );
+  return (
+    <Router>
+      <AuthProvider>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/signup" element={<CreateAcc />} />
+          <Route path="/login" element={<Login />} />
+
+          {/* Protected Routes */}
+          <Route element={<ProtectedRoute />}>
+            <Route element={<Layout />}>
+              <Route path="/" element={<Home />} />
+              <Route
+                path="/other"
+                element={<h1>This page does not have a specific component</h1>}
+              />
+            </Route>
+          </Route>
+
+          {/* Catch-all route to redirect to login */}
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </AuthProvider>
+    </Router>
+  );
+}
+
+// Create a Layout component
+function Layout() {
+  return (
+    <div className="flex h-screen">
+      <Navbar className="h-full" />
+      <div className="flex flex-grow overflow-auto">
+        <Outlet />
+      </div>
+    </div>
+  );
 }
 
 export default App;
-
-// import './index.css'
-// import { useState, useEffect } from 'react'
-// import { createClient } from '@supabase/supabase-js'
-// import { Auth } from '@supabase/auth-ui-react'
-// import { ThemeSupa } from '@supabase/auth-ui-shared'
-
-// const supabase = createClient('https://luirimqkntjkfxqdqsdf.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx1aXJpbXFrbnRqa2Z4cWRxc2RmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjY1MTQwNzUsImV4cCI6MjA0MjA5MDA3NX0.FcbVHjrxkooloSY54PDkkHXObvvW2POz8X981yN0YbU')
-
-// export default function App() {
-//   const [session, setSession] = useState(null)
-
-//   useEffect(() => {
-//     supabase.auth.getSession().then(({ data: { session } }) => {
-//       setSession(session)
-//     })
-
-//     const {
-//       data: { subscription },
-//     } = supabase.auth.onAuthStateChange((_event, session) => {
-//       setSession(session)
-//     })
-
-//     return () => subscription.unsubscribe()
-//   }, [])
-
-//   if (!session) {
-//     return (<Auth supabaseClient={supabase} appearance={{ theme: ThemeSupa }} />)
-//   }
-//   else {
-//     return (<div>Logged in!</div>)
-//   }
-// }

@@ -2,18 +2,18 @@
 @tailwind components;
 @tailwind utilities;
 
-*{
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    /* border: 1px solid red; */
-    color: white;
-  }
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  /* border: 1px solid red; */
+  color: white;
+}
 
-  body{
-    background-color: #111827;
-  }
-  
-  input{
-    background-color: #111827;
-  }
+body {
+  background-color: #1c1f2e;
+}
+
+input, select {
+  background-color: #111827;
+}

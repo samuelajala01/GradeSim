@@ -1,76 +1,117 @@
-import React, { useState } from 'react';
+// src/pages/Login.jsx
+import React, { useState, useEffect } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
-const LoginSignup = () => {
-    const [isLogin, setIsLogin] = useState(true);
+const Login = () => {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const { login, currentUser } = useAuth(); // Get currentUser to check auth state
+  const navigate = useNavigate();
 
-    const toggleForm = () => {
-        setIsLogin(!isLogin);
-    };
+  // Redirect if already logged in
+  useEffect(() => {
+    if (currentUser) {
+      navigate("/");
+    }
+  }, [currentUser, navigate]);
 
-    return (
-        <div className="flex items-center justify-center min-h-screen bg-gray-900">
-            <div className="bg-gray-800 p-8 rounded-lg shadow-lg w-96">
-                <h1 className="text-2xl text-white text-center mb-6">{isLogin ? 'Login' : 'Sign Up'}</h1>
-                <button 
-                    onClick={toggleForm} 
-                    className="w-full py-2 mb-4 text-white bg-blue-600 hover:bg-blue-500 rounded transition duration-200"
-                >
-                    {isLogin ? 'Switch to Sign Up' : 'Switch to Login'}
-                </button>
-                {isLogin ? (
-                    <form>
-                        {/* Login Form */}
-                        <input 
-                            type="email" 
-                            placeholder="Email" 
-                            required 
-                            className="w-full p-2 mb-4 border border-gray-600 rounded bg-gray-700 text-white"
-                        />
-                        <input 
-                            type="password" 
-                            placeholder="Password" 
-                            required 
-                            className="w-full p-2 mb-4 border border-gray-600 rounded bg-gray-700 text-white"
-                        />
-                        <button 
-                            type="submit" 
-                            className="w-full py-2 text-white bg-blue-600 hover:bg-blue-500 rounded transition duration-200"
-                        >
-                            Login
-                        </button>
-                    </form>
-                ) : (
-                    <form>
-                        {/* Sign Up Form */}
-                        <input 
-                            type="text" 
-                            placeholder="Username" 
-                            required 
-                            className="w-full p-2 mb-4 border border-gray-600 rounded bg-gray-700 text-white"
-                        />
-                        <input 
-                            type="email" 
-                            placeholder="Email" 
-                            required 
-                            className="w-full p-2 mb-4 border border-gray-600 rounded bg-gray-700 text-white"
-                        />
-                        <input 
-                            type="password" 
-                            placeholder="Password" 
-                            required 
-                            className="w-full p-2 mb-4 border border-gray-600 rounded bg-gray-700 text-white"
-                        />
-                        <button 
-                            type="submit" 
-                            className="w-full py-2 text-white bg-blue-600 hover:bg-blue-500 rounded transition duration-200"
-                        >
-                            Sign Up
-                        </button>
-                    </form>
-                )}
-            </div>
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setIsLoading(true);
+
+    try {
+      console.log("Attempting login with:", email);
+      await login(email, password);
+      console.log("Login successful");
+      navigate("/");
+    } catch (err) {
+      console.error("Login error:", err);
+      setError(
+        err.message || "Failed to log in. Please check your credentials."
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        <div>
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+            Sign in to your account
+          </h2>
         </div>
-    );
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          <input type="hidden" name="remember" defaultValue="true" />
+          <div className="rounded-md shadow-sm -space-y-px">
+            <div>
+              <label htmlFor="email-address" className="sr-only">
+                Email address
+              </label>
+              <input
+                id="email-address"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-white rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                placeholder="Email address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+            <div>
+              <label htmlFor="password" className="sr-only">
+                Password
+              </label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                required
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* Error Message */}
+          {error && (
+            <div className="text-red-500 text-center text-sm">{error}</div>
+          )}
+
+          <div>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+            >
+              {isLoading ? "Signing in..." : "Sign In"}
+            </button>
+          </div>
+        </form>
+        <div className="text-center">
+          <p className="mt-2 text-sm text-gray-600">
+            Don't have an account?{" "}
+            <Link
+              to="/signup"
+              className="font-medium text-indigo-600 hover:text-indigo-500"
+            >
+              Sign up
+            </Link>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
 };
 
-export default LoginSignup;
+export default Login;
