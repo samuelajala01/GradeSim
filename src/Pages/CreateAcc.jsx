@@ -1,18 +1,18 @@
 // src/pages/SignUp.jsx
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { createUserDocument } from '../utils/firestore';
+import React, { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { createUserDocument } from "../utils/firestore";
 
 const CreateAcc = () => {
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [course, setCourse] = useState('');
-  const [educationLevel, setEducationLevel] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [course, setCourse] = useState("");
+  const [educationLevel, setEducationLevel] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState("");
   const { signup } = useAuth();
   const navigate = useNavigate();
 
@@ -25,26 +25,18 @@ const CreateAcc = () => {
     }
   
     try {
-      // First create the authentication
-      const userCredential = await signup(email, password);
-      
-      try {
-        // Then create the user document in Firestore
-        await createUserDocument(userCredential.user.uid, {
-          firstName,
-          lastName,
-          course,
-          educationLevel,
-          email,
-        });
-      } catch (firestoreError) {
-        // If Firestore fails, we should delete the auth user or sign them out
-        await userCredential.user.delete();
-        throw new Error(`Failed to create user profile: ${firestoreError.message}`);
-      }
+      const userData = {
+        firstName,
+        lastName,
+        course,
+        educationLevel
+      };
   
+      const result = await signup(email, password, userData);
+     
       navigate('/');
     } catch (err) {
+      console.error("Signup error:", err);
       setError(err.message);
     }
   };
@@ -61,7 +53,10 @@ const CreateAcc = () => {
           {/* First and Last Name in a Row */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div>
-              <label htmlFor="first-name" className="block text-sm font-medium text-white">
+              <label
+                htmlFor="first-name"
+                className="block text-sm font-medium text-white"
+              >
                 First Name
               </label>
               <input
@@ -74,7 +69,10 @@ const CreateAcc = () => {
               />
             </div>
             <div>
-              <label htmlFor="last-name" className="block text-sm font-medium text-white">
+              <label
+                htmlFor="last-name"
+                className="block text-sm font-medium text-white"
+              >
                 Last Name
               </label>
               <input
@@ -90,7 +88,10 @@ const CreateAcc = () => {
 
           {/* Course */}
           <div>
-            <label htmlFor="course" className="block text-sm font-medium text-white">
+            <label
+              htmlFor="course"
+              className="block text-sm font-medium text-white"
+            >
               Course
             </label>
             <input
@@ -105,7 +106,10 @@ const CreateAcc = () => {
 
           {/* Education Level */}
           <div>
-            <label htmlFor="education-level" className="block text-sm font-medium text-white">
+            <label
+              htmlFor="education-level"
+              className="block text-sm font-medium text-white"
+            >
               Education Level
             </label>
             <select
@@ -125,7 +129,10 @@ const CreateAcc = () => {
 
           {/* Email */}
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-white">
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-white"
+            >
               Email Address
             </label>
             <input
@@ -141,7 +148,10 @@ const CreateAcc = () => {
           {/* Password and Confirm Password in a Row */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-white">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-white"
+              >
                 Password
               </label>
               <input
@@ -154,7 +164,10 @@ const CreateAcc = () => {
               />
             </div>
             <div>
-              <label htmlFor="confirm-password" className="block text-sm font-medium text-white">
+              <label
+                htmlFor="confirm-password"
+                className="block text-sm font-medium text-white"
+              >
                 Confirm Password
               </label>
               <input
@@ -169,7 +182,9 @@ const CreateAcc = () => {
           </div>
 
           {/* Error Message */}
-          {error && <div className="text-red-500 text-center text-sm">{error}</div>}
+          {error && (
+            <div className="text-red-500 text-center text-sm">{error}</div>
+          )}
 
           {/* Submit Button */}
           <div>
@@ -185,8 +200,11 @@ const CreateAcc = () => {
         {/* Log In Link */}
         <div className="text-center">
           <p className="text-sm text-gray-600">
-            Already have an account?{' '}
-            <Link to="/login" className="font-medium text-indigo-600 hover:text-indigo-500">
+            Already have an account?{" "}
+            <Link
+              to="/login"
+              className="font-medium text-indigo-600 hover:text-indigo-500"
+            >
               Log in
             </Link>
           </p>

@@ -1,45 +1,99 @@
 // src/context/AuthContext.jsx
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import { 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword, 
-  signOut, 
-  onAuthStateChanged 
-} from 'firebase/auth';
-import { auth } from '../firebaseConfig';
+import React, { createContext, useState, useContext, useEffect } from "react";
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  updateProfile,
+} from "firebase/auth";
+import { auth } from "../firebaseConfig";
 
-// Create the AuthContext
 const AuthContext = createContext();
 
-// Export the useAuth hook
 export function useAuth() {
   return useContext(AuthContext);
 }
 
-// AuthProvider component
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Signup function
-  const signup = (email, password) => {
-    return createUserWithEmailAndPassword(auth, email, password);
+  // Enhanced signup function that also updates the user profile
+  const signup = async (email, password, userData) => {
+    try {
+      // Create user first
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+
+      // Prepare profile data
+      const profileData = {
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        course: userData.course,
+        educationLevel: userData.educationLevel,
+      };
+
+      // Update profile without waiting
+      updateProfile(userCredential.user, {
+        displayName: JSON.stringify(profileData),
+      });
+
+      // Immediately set the current user with profile data
+      setCurrentUser({
+        ...userCredential.user,
+        profileData,
+      });
+
+      return userCredential;
+    } catch (error) {
+      console.error("Error in signup:", error);
+      throw error;
+    }
   };
 
-  // Login function
+  // Helper function to parse user profile data
+  // const getUserProfile = (user) => {
+  //   if (!user || !user.displayName) return null;
+  //   try {
+  //     return JSON.parse(user.displayName);
+  //   } catch (error) {
+  //     console.error("Error parsing user profile:", error);
+  //     return null;
+  //   }
+  // };
+
   const login = (email, password) => {
     return signInWithEmailAndPassword(auth, email, password);
   };
 
-  // Logout function
   const logout = () => {
     return signOut(auth);
   };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      console.log('Auth state changed:', user?.email);
-      setCurrentUser(user);
+
+      if (user) {
+        try {
+          const profileData = user.displayName
+            ? JSON.parse(user.displayName)
+            : null;
+
+          setCurrentUser({
+            ...user,
+            profileData,
+          });
+        } catch (error) {
+          console.error("Error parsing profile data:", error);
+          setCurrentUser(user);
+        }
+      } else {
+        setCurrentUser(null);
+      }
       setLoading(false);
     });
 
@@ -51,7 +105,7 @@ export function AuthProvider({ children }) {
     signup,
     login,
     logout,
-    loading
+    loading,
   };
 
   return (

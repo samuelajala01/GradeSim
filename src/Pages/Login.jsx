@@ -8,7 +8,7 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { login, currentUser } = useAuth(); // Get currentUser to check auth state
+  const { login, currentUser } = useAuth(); 
   const navigate = useNavigate();
 
   // Redirect if already logged in
@@ -24,9 +24,7 @@ const Login = () => {
     setIsLoading(true);
 
     try {
-      console.log("Attempting login with:", email);
       await login(email, password);
-      console.log("Login successful");
       navigate("/");
     } catch (err) {
       console.error("Login error:", err);
