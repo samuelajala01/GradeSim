@@ -15,10 +15,8 @@ const Home = () => {
       alert("Please enter a table name");
       return;
     }
-    const initialData = [
-      ["", "", "", ""]
-    ];
-    
+    const initialData = [["", "", "", ""]];
+
     setTables([
       ...tables,
       {
@@ -46,52 +44,54 @@ const Home = () => {
       if (isNaN(numValue)) return;
     }
 
-    setTables(prevTables => {
+    setTables((prevTables) => {
       const newTables = [...prevTables];
       const newData = [...newTables[tableIndex].data];
       newData[rowIndex] = [...newData[rowIndex]];
       newData[rowIndex][colIndex] = value;
-      
+
       if (colIndex === 1 || colIndex === 2) {
         const unit = newData[rowIndex][1];
         const grade = newData[rowIndex][2];
         if (unit && grade) {
-          const score = Math.round(parseFloat(unit) * parseFloat(grade)).toString(); // Removed decimal places
+          const score = Math.round(
+            parseFloat(unit) * parseFloat(grade)
+          ).toString(); // Removed decimal places
           newData[rowIndex][3] = score;
         } else {
           newData[rowIndex][3] = "";
         }
       }
-      
+
       newTables[tableIndex] = {
         ...newTables[tableIndex],
-        data: newData
+        data: newData,
       };
       return newTables;
     });
   };
 
   const addRow = (tableIndex) => {
-    setTables(prevTables => {
+    setTables((prevTables) => {
       const newTables = [...prevTables];
       const newData = [...newTables[tableIndex].data];
       newData.push(["", "", "", ""]);
       newTables[tableIndex] = {
         ...newTables[tableIndex],
-        data: newData
+        data: newData,
       };
       return newTables;
     });
   };
 
   const deleteRow = (tableIndex, rowIndex) => {
-    setTables(prevTables => {
+    setTables((prevTables) => {
       const newTables = [...prevTables];
       const newData = [...newTables[tableIndex].data];
       newData.splice(rowIndex, 1);
       newTables[tableIndex] = {
         ...newTables[tableIndex],
-        data: newData
+        data: newData,
       };
       return newTables;
     });
@@ -100,24 +100,30 @@ const Home = () => {
   const calculateTotalGrade = (table) => {
     let totalScore = 0;
     let totalUnits = 0;
-    
-    table.data.forEach(row => {
+
+    table.data.forEach((row) => {
       if (row[1] && row[2]) {
         totalScore += parseFloat(row[3] || 0);
         totalUnits += parseFloat(row[1] || 0);
       }
     });
-    
-    return totalUnits ? Math.round(totalScore / totalUnits).toString() : '0'; // Removed decimal places
+
+    return totalUnits
+      ? (totalScore / totalUnits).toFixed(2).toString()
+      : "0.00";
   };
 
   return (
-    <div className="w-[100vw] m-8 sm:m-12 md:m-20">
+    <div className="w-[100vw] mt-28 m-8 sm:m-12 md:m-[6vw]">
       <h1 className="text-4xl font-bold mb-8">
-        Welcome {currentUser?.profileData?.firstName}!
+        Welcome{" "}
+        <span className="text-blue-600">
+          {currentUser?.profileData?.firstName}
+        </span>
+        👋🏽
       </h1>
 
-      <div className="mt-4 mb-8">
+      <div className="mt-4 mb-16">
         <input
           type="text"
           value={newTableName}
@@ -127,46 +133,83 @@ const Home = () => {
         />
         <button
           onClick={addTable}
-          className="ml-2 p-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+          className="ml-2 p-2 bg-blue-600 text-white rounded hover:bg-blue-600 transition-colors"
         >
           Create Table
         </button>
       </div>
 
       {tables.map((table, tableIndex) => (
-        <div key={tableIndex} className="mt-8 bg-[#1f325e] p-4 rounded-md">
+        <div
+          key={tableIndex}
+          className="mt-8 bg-black bg-opacity-[0.5] p-4 rounded-sm"
+        >
           <h2 className="text-2xl font-bold pl-2 mb-4">{table.name}</h2>
 
-          <div className="overflow-x-auto rounded-lg">
-            <table className="w-full border-collapse bg-[#1a2b4d]">
+          <div className="overflow-x-auto rounded-sm">
+            <table className="w-full border-collapse ">
               <thead>
                 <tr>
                   {table.colNames.map((colName, colIndex) => (
-                    <th key={colIndex} className="border border-gray-600 p-3 text-left bg-[#284184] font-bold">
+                    <th
+                      key={colIndex}
+                      className="border border-white p-3 text-left bg-blue-600 font-bold"
+                    >
                       {colName}
                     </th>
                   ))}
-                  <th className="border border-gray-600 p-3 text-left bg-[#284184] font-bold">Action</th>
+                  <th className="border border-white  p-3 text-left bg-blue-600 font-bold">
+                    Action
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {table.data.map((row, rowIndex) => (
-                  <tr key={rowIndex} className="hover:bg-[#233156] transition-colors">
+                  <tr
+                    key={rowIndex}
+                    className="hover:bg-[#233156] transition-colors"
+                  >
                     {row.map((cell, colIndex) => (
-                      <td key={colIndex} className="border border-gray-600 p-2">
+                      <td key={colIndex} className="border border-white p-2">
                         <input
-                          type={colIndex === 1 || colIndex === 2 ? "number" : "text"}
+                          type={
+                            colIndex === 1 || colIndex === 2 ? "number" : "text"
+                          }
                           value={cell}
-                          onChange={(e) => handleCellChange(tableIndex, rowIndex, colIndex, e.target.value)}
-                          className="w-full bg-transparent outline-none px-2 py-1"
+                          onChange={(e) =>
+                            handleCellChange(
+                              tableIndex,
+                              rowIndex,
+                              colIndex,
+                              e.target.value
+                            )
+                          }
+                          className={`w-full bg-transparent outline-none px-2 py-1 rounded focus:ring-2 focus:ring-blue-500 transition-all
+        ${
+          colIndex === 1 || colIndex === 2
+            ? "text-center font-mono tracking-wider"
+            : ""
+        }
+        ${colIndex === 3 ? "text-yellow-400 font-semibold" : ""}
+      `}
                           disabled={colIndex === 3}
-                          min={colIndex === 1 || colIndex === 2 ? "0" : undefined}
-                          step="1"
-                          placeholder={colIndex === 0 ? "Enter course name" : colIndex === 1 ? "Units" : colIndex === 2 ? "Grade" : ""}
+                          min={
+                            colIndex === 1 || colIndex === 2 ? "0" : undefined
+                          }
+                          step={colIndex === 2 ? "0.1" : "1"}
+                          placeholder={
+                            colIndex === 0
+                              ? "Enter course name"
+                              : colIndex === 1
+                              ? "Units"
+                              : colIndex === 2
+                              ? "Grade"
+                              : ""
+                          }
                         />
                       </td>
                     ))}
-                    <td className="border border-gray-600 p-2 text-center">
+                    <td className="border border-white p-2 text-center">
                       <button
                         onClick={() => deleteRow(tableIndex, rowIndex)}
                         className="p-1.5 text-red-400 hover:text-red-500 hover:bg-[#1f2937] rounded-full transition-colors"
@@ -180,7 +223,7 @@ const Home = () => {
               </tbody>
             </table>
           </div>
-          
+
           <div className="mt-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="flex flex-wrap gap-3">
               <button
@@ -200,7 +243,7 @@ const Home = () => {
               </button>
             </div>
             <div className="px-4 py-2 bg-[#284184] rounded-lg">
-              <span className="font-bold">Total Grade: </span>
+              <span className="font-bold">GPA: </span>
               <span className="text-lg">{calculateTotalGrade(table)}</span>
             </div>
           </div>
