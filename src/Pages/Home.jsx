@@ -142,7 +142,7 @@ const Home = () => {
       {tables.map((table, tableIndex) => (
         <div
           key={tableIndex}
-          className="mt-8 bg-black bg-opacity-[0.5] p-4 rounded-sm"
+          className="mt-8 bg-black bg-opacity-[0.5] p-8 rounded-sm"
         >
           <h2 className="text-2xl font-bold pl-2 mb-4">{table.name}</h2>
 
@@ -224,7 +224,7 @@ const Home = () => {
             </table>
           </div>
 
-          <div className="mt-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="mt-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="flex flex-wrap gap-3">
               <button
                 onClick={() => addRow(tableIndex)}
@@ -242,7 +242,7 @@ const Home = () => {
                 Delete Table
               </button>
             </div>
-            <div className="px-4 py-2 bg-[#284184] rounded-lg">
+            <div className="px-4 py-2 bg-blue-600 rounded-lg">
               <span className="font-bold">GPA: </span>
               <span className="text-lg">{calculateTotalGrade(table)}</span>
             </div>
