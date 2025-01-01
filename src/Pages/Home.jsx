@@ -139,8 +139,11 @@ const Home = () => {
         </button>
       </div>
 
-      {tables.map((table, tableIndex) => (
-        <div
+      {tables.length === 0 ? (
+  <p className="text-gray-400 text-center py-16">No tables created yet. Create a new semester to begin.</p>
+) : (
+  tables.map((table, tableIndex) => (
+    <div
           key={tableIndex}
           className="mt-8 bg-black bg-opacity-[0.5] p-8 rounded-sm"
         >
@@ -248,7 +251,8 @@ const Home = () => {
             </div>
           </div>
         </div>
-      ))}
+  ))
+)}
 
       {showConfirmModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
