@@ -117,6 +117,28 @@ const Home = () => {
       : "0.00";
   };
 
+  // Add this function near your other calculation functions
+const calculateCGPA = () => {
+  let totalScoreAllTables = 0;
+  let totalUnitsAllTables = 0;
+
+  tables.forEach(table => {
+    table.data.forEach(row => {
+      if (row[1] && row[2]) { // if both unit and grade exist
+        totalScoreAllTables += parseFloat(row[3] || 0); // row[3] is the score
+        totalUnitsAllTables += parseFloat(row[1] || 0); // row[1] is the unit
+      }
+    });
+  });
+
+  return totalUnitsAllTables
+    ? (totalScoreAllTables / totalUnitsAllTables).toFixed(2).toString()
+    : "0.00";
+};
+
+// Then replace the CGPA line in your JSX with:
+
+
   return (
     <div className="w-[100vw] mt-28 m-8 sm:m-12 md:m-[6vw]">
       <h1 className="text-4xl font-bold mb-8">
@@ -142,6 +164,10 @@ const Home = () => {
           Create Table
         </button>
       </div>
+
+      <p className="text-2xl font-bold mb-8">
+  CGPA: <span className="text-blue-600">{calculateCGPA()}</span>
+</p>
 
       {tables.length === 0 ? (
   <p className="text-gray-400 text-center py-16">No tables created yet. Create a new semester to begin.</p>
