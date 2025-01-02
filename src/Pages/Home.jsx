@@ -89,6 +89,11 @@ const Home = () => {
       const newTables = [...prevTables];
       const newData = [...newTables[tableIndex].data];
       newData.splice(rowIndex, 1);
+
+      if (newData.length === 0) {
+        return prevTables.filter((_, index) => index !== tableIndex);
+      }
+  
       newTables[tableIndex] = {
         ...newTables[tableIndex],
         data: newData,
@@ -96,7 +101,6 @@ const Home = () => {
       return newTables;
     });
   };
-
   const calculateTotalGrade = (table) => {
     let totalScore = 0;
     let totalUnits = 0;
