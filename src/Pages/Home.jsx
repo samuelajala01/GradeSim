@@ -181,79 +181,70 @@ const calculateCGPA = () => {
 
           <div className="overflow-x-auto rounded-sm">
             <table className="w-full border-collapse ">
+             
               <thead>
-                <tr>
-                  {table.colNames.map((colName, colIndex) => (
-                    <th
-                      key={colIndex}
-                      className="border border-white p-3 text-left bg-blue-600 font-bold"
-                    >
-                      {colName}
-                    </th>
-                  ))}
-                  <th className="border border-white  p-3 text-left bg-blue-600 font-bold">
-                    Action
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {table.data.map((row, rowIndex) => (
-                  <tr
-                    key={rowIndex}
-                    className="hover:bg-[#233156] transition-colors"
-                  >
-                    {row.map((cell, colIndex) => (
-                      <td key={colIndex} className="border border-white p-2">
-                        <input
-                          type={
-                            colIndex === 1 || colIndex === 2 ? "number" : "text"
-                          }
-                          value={cell}
-                          onChange={(e) =>
-                            handleCellChange(
-                              tableIndex,
-                              rowIndex,
-                              colIndex,
-                              e.target.value
-                            )
-                          }
-                          className={`w-full bg-transparent outline-none px-2 py-1 rounded focus:ring-2 focus:ring-blue-500 transition-all
-        ${
-          colIndex === 1 || colIndex === 2
-            ? "text-center font-mono tracking-wider"
-            : ""
-        }
-        ${colIndex === 3 ? "text-yellow-400 font-semibold" : ""}
-      `}
-                          disabled={colIndex === 3}
-                          min={
-                            colIndex === 1 || colIndex === 2 ? "0" : undefined
-                          }
-                          step={colIndex === 2 ? "0.1" : "1"}
-                          placeholder={
-                            colIndex === 0
-                              ? "Enter course name"
-                              : colIndex === 1
-                              ? "Units"
-                              : colIndex === 2
-                              ? "Grade"
-                              : ""
-                          }
-                        />
-                      </td>
-                    ))}
-                    <td className="border border-white p-2 text-center">
-                      <button
-                        onClick={() => deleteRow(tableIndex, rowIndex)}
-                        className="p-1.5 text-red-400 hover:text-red-500 hover:bg-[#1f2937] rounded-full transition-colors"
-                        title="Delete row"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
+  <tr>
+    <th className="border border-white p-3 text-left bg-blue-600 font-bold">
+      S/N
+    </th>
+    {table.colNames.map((colName, colIndex) => (
+      <th
+        key={colIndex}
+        className="border border-white p-3 text-left bg-blue-600 font-bold"
+      >
+        {colName}
+      </th>
+    ))}
+    <th className="border border-white p-3 text-left bg-blue-600 font-bold">
+      Action
+    </th>
+  </tr>
+</thead>
+<tbody>
+ {table.data.map((row, rowIndex) => (
+   <tr key={rowIndex} className="hover:bg-[#233156] transition-colors">
+     <td className="border border-white p-2 text-center">
+       {rowIndex + 1}
+     </td>
+     {row.map((cell, colIndex) => (
+       <td key={colIndex} className="border border-white p-2">
+         <input
+           type={colIndex === 1 || colIndex === 2 ? "number" : "text"}
+           value={cell}
+           onChange={(e) =>
+             handleCellChange(tableIndex, rowIndex, colIndex, e.target.value)
+           }
+           className={`w-full bg-transparent outline-none px-2 py-1 rounded focus:ring-2 focus:ring-blue-500 transition-all
+             ${colIndex === 1 || colIndex === 2 ? "text-center font-mono tracking-wider" : ""}
+             ${colIndex === 3 ? "text-yellow-400 font-semibold" : ""}`
+           }
+           disabled={colIndex === 3}
+           min={colIndex === 1 || colIndex === 2 ? "0" : undefined}
+           step={colIndex === 2 ? "0.1" : "1"}
+           placeholder={
+             colIndex === 0
+               ? "Enter course name"
+               : colIndex === 1
+               ? "Units"
+               : colIndex === 2
+               ? "Grade"
+               : ""
+           }
+         />
+       </td>
+     ))}
+     <td className="border border-white p-2 text-center">
+       <button
+         onClick={() => deleteRow(tableIndex, rowIndex)}
+         className="p-1.5 text-red-400 hover:text-red-500 hover:bg-[#1f2937] rounded-full transition-colors"
+         title="Delete row"
+       >
+         <Trash2 size={18} />
+       </button>
+     </td>
+   </tr>
+ ))}
+</tbody>
             </table>
           </div>
 
