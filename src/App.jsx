@@ -11,6 +11,7 @@ import Login from "./Pages/Login";
 import Navbar from "./Components/Navbar";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import CreateAcc from "./Pages/CreateAcc";
+import Analytics from "./Pages/Analytics";
 
 function ProtectedRoute() {
   const { currentUser, loading } = useAuth();
@@ -43,8 +44,8 @@ function App() {
             <Route element={<Layout />}>
               <Route path="/" element={<Home />} />
               <Route
-                path="/other"
-                element={<h1>This page does not have a specific component</h1>}
+                path="/analytics"
+                element={<Analytics/>}
               />
             </Route>
           </Route>
