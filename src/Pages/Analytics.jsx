@@ -27,17 +27,23 @@ ChartJS.register(
 );
 
 const Analytics = () => {
-  const { currentUser, tables = [] } = useAuth();
+  // We need to get tables from localStorage since they're not in AuthContext
+  const { currentUser } = useAuth();
+  const tables = JSON.parse(localStorage.getItem('tables')) || [];
 
   const calculateTableGPA = (table) => {
     let totalScore = 0;
     let totalUnits = 0;
+    
     table.data.forEach(row => {
-      if (row[1] && row[2]) {
-        totalScore += parseFloat(row[3] || 0);
-        totalUnits += parseFloat(row[1] || 0);
+      const unit = parseFloat(row[1]);
+      const grade = parseFloat(row[2]);
+      if (!isNaN(unit) && !isNaN(grade)) {
+        totalScore += unit * grade;
+        totalUnits += unit;
       }
     });
+    
     return totalUnits ? (totalScore / totalUnits).toFixed(2) : "0.00";
   };
 
@@ -46,11 +52,13 @@ const Analytics = () => {
     tables.forEach(table => {
       table.data.forEach(row => {
         const grade = parseFloat(row[2] || 0);
-        if (grade >= 4.5) grades.A++;
-        else if (grade >= 3.5) grades.B++;
-        else if (grade >= 2.5) grades.C++;
-        else if (grade >= 1.5) grades.D++;
-        else if (grade > 0) grades.F++;
+        if (!isNaN(grade)) {
+          if (grade >= 4.5) grades.A++;
+          else if (grade >= 3.5) grades.B++;
+          else if (grade >= 2.5) grades.C++;
+          else if (grade >= 1.5) grades.D++;
+          else if (grade > 0) grades.F++;
+        }
       });
     });
     return grades;
@@ -66,25 +74,37 @@ const Analytics = () => {
 
   const getTotalUnits = () => {
     return tables.reduce((sum, table) => 
-      sum + table.data.reduce((s, row) => s + parseFloat(row[1] || 0), 0)
+      sum + table.data.reduce((s, row) => {
+        const unit = parseFloat(row[1] || 0);
+        return s + (isNaN(unit) ? 0 : unit);
+      }, 0)
     , 0);
   };
 
+  // Only create chart data if we have tables
   const gpaData = {
-    labels: tables.map(table => table.name || []),
+    labels: tables.map(table => table.name),
     datasets: [{
       label: 'GPA',
       data: tables.map(table => calculateTableGPA(table)),
       borderColor: '#3b82f6',
+      backgroundColor: 'rgba(59, 130, 246, 0.5)',
       tension: 0.1
     }]
   };
 
+  const gradeDistribution = getGradeDistribution();
   const gradeData = {
     labels: ['A', 'B', 'C', 'D', 'F'],
     datasets: [{
-      data: Object.values(getGradeDistribution()),
-      backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#6b7280']
+      data: Object.values(gradeDistribution),
+      backgroundColor: [
+        '#3b82f6', // blue
+        '#10b981', // green
+        '#f59e0b', // yellow
+        '#ef4444', // red
+        '#6b7280'  // gray
+      ]
     }]
   };
 
@@ -93,7 +113,10 @@ const Analytics = () => {
     datasets: [{
       label: 'Credit Units',
       data: tables.map(table => 
-        table.data.reduce((sum, row) => sum + parseFloat(row[1] || 0), 0)
+        table.data.reduce((sum, row) => {
+          const unit = parseFloat(row[1] || 0);
+          return sum + (isNaN(unit) ? 0 : unit);
+        }, 0)
       ),
       backgroundColor: '#3b82f6'
     }]
@@ -101,8 +124,73 @@ const Analytics = () => {
 
   const bestSemester = getBestSemester();
   const totalUnits = getTotalUnits();
-  const totalCourses = tables.reduce((sum, table) => sum + table.data.length, 0);
-  const gradeDistribution = getGradeDistribution();
+  const totalCourses = tables.reduce((sum, table) => 
+    sum + table.data.filter(row => row[0] !== "").length, 0);
+
+  // Common chart options
+  const lineOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: { 
+      y: { 
+        min: 0, 
+        max: 5,
+        ticks: {
+          color: 'white'
+        }
+      },
+      x: {
+        ticks: {
+          color: 'white'
+        }
+      }
+    },
+    plugins: {
+      legend: {
+        labels: {
+          color: 'white'
+        }
+      }
+    }
+  };
+
+  const pieOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'right',
+        labels: {
+          color: 'white'
+        }
+      }
+    }
+  };
+
+  const barOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: {
+          color: 'white'
+        }
+      },
+      x: {
+        ticks: {
+          color: 'white'
+        }
+      }
+    },
+    plugins: {
+      legend: {
+        labels: {
+          color: 'white'
+        }
+      }
+    }
+  };
 
   return (
     <div className="w-[100vw] min-h-screen bg-[#111827]">
@@ -142,10 +230,7 @@ const Analytics = () => {
             <div className="bg-black bg-opacity-50 p-6 rounded-lg mb-8">
               <h2 className="text-xl font-bold mb-6">GPA Trend</h2>
               <div className="h-[400px]">
-                <Line data={gpaData} options={{ 
-                  maintainAspectRatio: false,
-                  scales: { y: { min: 0, max: 5 } }
-                }} />
+                <Line data={gpaData} options={lineOptions} />
               </div>
             </div>
 
@@ -153,20 +238,14 @@ const Analytics = () => {
               <div className="bg-black bg-opacity-50 p-6 rounded-lg">
                 <h2 className="text-xl font-bold mb-6">Grade Distribution</h2>
                 <div className="h-[300px]">
-                  <Pie data={gradeData} options={{ 
-                    maintainAspectRatio: false,
-                    plugins: { legend: { position: 'right' } }
-                  }} />
+                  <Pie data={gradeData} options={pieOptions} />
                 </div>
               </div>
 
               <div className="bg-black bg-opacity-50 p-6 rounded-lg">
                 <h2 className="text-xl font-bold mb-6">Credit Units per Semester</h2>
                 <div className="h-[300px]">
-                  <Bar data={unitsData} options={{ 
-                    maintainAspectRatio: false,
-                    scales: { y: { beginAtZero: true } }
-                  }} />
+                  <Bar data={unitsData} options={barOptions} />
                 </div>
               </div>
             </div>
@@ -176,7 +255,9 @@ const Analytics = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="p-4 bg-opacity-50 bg-blue-900 rounded-lg">
                   <h3 className="text-gray-300 mb-2">Best Performing Semester</h3>
-                  <p className="text-xl font-bold">{bestSemester?.name || 'N/A'} ({bestSemester?.gpa || '0.00'})</p>
+                  <p className="text-xl font-bold">
+                    {bestSemester?.name || 'N/A'} ({bestSemester?.gpa || '0.00'})
+                  </p>
                 </div>
                 <div className="p-4 bg-opacity-50 bg-blue-900 rounded-lg">
                   <h3 className="text-gray-300 mb-2">Total A Grades</h3>
