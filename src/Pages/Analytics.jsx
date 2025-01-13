@@ -27,7 +27,7 @@ ChartJS.register(
 );
 
 const Analytics = () => {
-  // We need to get tables from localStorage since they're not in AuthContext
+
   const { currentUser } = useAuth();
   const tables = JSON.parse(localStorage.getItem("tables")) || [];
 
