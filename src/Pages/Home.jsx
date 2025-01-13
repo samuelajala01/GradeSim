@@ -225,7 +225,7 @@ const Home = () => {
           onClick={addTable}
           className="ml-2 p-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
         >
-          Create Semester
+          Create table
         </button>
       </div>
 
