@@ -349,7 +349,7 @@ const Home = () => {
                   }}
                   className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
                 >
-                  Delete Semester
+                  Delete table
                 </button>
               </div>
               <div className="px-4 py-2 bg-blue-600 rounded-lg">
@@ -366,7 +366,7 @@ const Home = () => {
           <div className="bg-[#111827] p-6 rounded-lg shadow-lg w-full max-w-md">
             <h3 className="text-lg font-bold mb-4">Confirm Deletion</h3>
             <p className="text-red-500">
-              Are you sure you want to delete this semester? This action cannot
+              Are you sure you want to delete this table? This action cannot
               be undone.
             </p>
             <div className="mt-6 flex justify-end gap-3">
