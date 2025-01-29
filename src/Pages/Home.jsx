@@ -204,7 +204,7 @@ const Home = () => {
   };
 
   return (
-    <div className="w-[100vw] mt-28 m-8 sm:m-12 md:m-[6vw]">
+    <div className="w-[100vw] mt-28 m-8 sm:m-16 md:m-[8vw]">
       <h1 className="text-4xl font-bold mb-8">
         Welcome{" "}
         <span className="text-blue-600">
@@ -366,8 +366,8 @@ const Home = () => {
           <div className="bg-[#111827] p-6 rounded-lg shadow-lg w-full max-w-md">
             <h3 className="text-lg font-bold mb-4">Confirm Deletion</h3>
             <p className="text-red-500">
-              Are you sure you want to delete this table? This action cannot
-              be undone.
+              Are you sure you want to delete this table? This action cannot be
+              undone.
             </p>
             <div className="mt-6 flex justify-end gap-3">
               <button
