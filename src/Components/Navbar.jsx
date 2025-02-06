@@ -58,6 +58,26 @@ const Navbar = () => {
             Analytics
           </Link>
           <Link
+            to="/predictor"
+            onClick={() => {
+              handleLogout();
+              setIsOpen(false);
+            }}
+            className="text-white block px-4 md:px-16 py-2 hover:bg-[#111827] rounded transition-colors"
+          >
+            Grade Predictor
+          </Link>
+          <Link
+            to="/settings"
+            onClick={() => {
+              handleLogout();
+              setIsOpen(false);
+            }}
+            className="text-white block px-4 md:px-16 py-2 hover:bg-[#111827] rounded transition-colors"
+          >
+            Settings
+          </Link>
+          <Link
             to="/login"
             onClick={() => {
               handleLogout();
