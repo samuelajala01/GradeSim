@@ -12,6 +12,8 @@ import Navbar from "./Components/Navbar";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import CreateAcc from "./Pages/CreateAcc";
 import Analytics from "./Pages/Analytics";
+import Predictor from "./Pages/Predictor";
+import Settings from "./Pages/Settings";
 
 function ProtectedRoute() {
   const { currentUser, loading } = useAuth();
@@ -43,10 +45,9 @@ function App() {
           <Route element={<ProtectedRoute />}>
             <Route element={<Layout />}>
               <Route path="/" element={<Home />} />
-              <Route
-                path="/analytics"
-                element={<Analytics/>}
-              />
+              <Route path="/analytics" element={<Analytics />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/predictor" element={<Predictor />} />
             </Route>
           </Route>
 
