@@ -203,6 +203,34 @@ const Home = () => {
       : "0.00";
   };
 
+  const calculateTotalUnits = () => {
+    let totalUnits = 0;
+
+    tables.forEach((table) => {
+      table.data.forEach((row) => {
+        if (row[1]) {
+          totalUnits += parseFloat(row[1]) || 0;
+        }
+      });
+    });
+
+    return totalUnits;
+  };
+
+  const calculateTotalScore = () => {
+    let totalScore = 0;
+
+    tables.forEach((table) => {
+      table.data.forEach((row) => {
+        if (row[3]) {
+          totalScore += parseFloat(row[3]) || 0;
+        }
+      });
+    });
+
+    return totalScore;
+  };
+
   return (
     <div className="w-[100vw] mt-28 m-8 sm:m-16 md:m-[8vw]">
       <h1 className="text-4xl font-bold mb-8">
@@ -230,7 +258,10 @@ const Home = () => {
       </div>
 
       <p className="text-2xl font-bold mb-8">
-        CGPA: <span className="text-blue-600">{calculateCGPA()}</span>
+        CGPA: <span className="text-blue-600">{calculateCGPA()}</span> | Total
+        Units: <span className="text-blue-600">{calculateTotalUnits()}</span> | 
+        Total Score:{" "}
+        <span className="text-blue-600">{calculateTotalScore()}</span>
       </p>
 
       {tables.length === 0 ? (
