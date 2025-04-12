@@ -1,304 +1,184 @@
 import React from "react";
 import { useAuth } from "../context/AuthContext";
-import { Line, Bar, Pie } from "react-chartjs-2";
+import { Bar, Pie } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
-  PointElement,
-  LineElement,
   BarElement,
   ArcElement,
-  Title,
   Tooltip,
   Legend,
 } from "chart.js";
 
+// Register ChartJS components
 ChartJS.register(
   CategoryScale,
   LinearScale,
-  PointElement,
-  LineElement,
   BarElement,
   ArcElement,
-  Title,
   Tooltip,
   Legend
 );
 
 const Analytics = () => {
-
   const { currentUser } = useAuth();
-  const tables = JSON.parse(localStorage.getItem("tables")) || [];
+  const tables = JSON.parse(localStorage.getItem("cgpaCalculatorTables")) || [];
 
-  const calculateTableGPA = (table) => {
-    let totalScore = 0;
-    let totalUnits = 0;
-
+  // Calculate GPA for a single semester
+  const calculateGPA = (table) => {
+    let totalScore = 0,
+      totalUnits = 0;
     table.data.forEach((row) => {
-      const unit = parseFloat(row[1]);
-      const grade = parseFloat(row[2]);
-      if (!isNaN(unit) && !isNaN(grade)) {
-        totalScore += unit * grade;
-        totalUnits += unit;
-      }
+      const unit = parseFloat(row[1]) || 0;
+      const grade = parseFloat(row[2]) || 0;
+      totalScore += unit * grade;
+      totalUnits += unit;
     });
-
-    return totalUnits ? (totalScore / totalUnits).toFixed(2) : "0.00";
+    return totalUnits ? (totalScore / totalUnits).toFixed(2) : 0;
   };
 
-  const getGradeDistribution = () => {
-    const grades = { A: 0, B: 0, C: 0, D: 0, F: 0 };
+  // Overall CGPA calculation
+  const calculateCGPA = () => {
+    let totalScore = 0,
+      totalUnits = 0;
     tables.forEach((table) => {
       table.data.forEach((row) => {
-        const grade = parseFloat(row[2] || 0);
-        if (!isNaN(grade)) {
-          if (grade >= 4.5) grades.A++;
-          else if (grade >= 3.5) grades.B++;
-          else if (grade >= 2.5) grades.C++;
-          else if (grade >= 1.5) grades.D++;
-          else if (grade > 0) grades.F++;
-        }
+        const unit = parseFloat(row[1]) || 0;
+        const grade = parseFloat(row[2]) || 0;
+        totalScore += unit * grade;
+        totalUnits += unit;
       });
     });
-    return grades;
+    return totalUnits ? (totalScore / totalUnits).toFixed(2) : 0;
   };
 
-  const getBestSemester = () => {
-    if (!tables.length) return null;
-    return tables.reduce(
-      (best, table) => {
-        const gpa = parseFloat(calculateTableGPA(table));
-        return gpa > best.gpa ? { name: table.name, gpa } : best;
-      },
-      { name: "", gpa: 0 }
-    );
+  // Grade distribution calculation
+  const getGradeDistribution = () => {
+    const distribution = { A: 0, B: 0, C: 0, D: 0, F: 0 };
+    tables.forEach((table) => {
+      table.data.forEach((row) => {
+        const grade = parseFloat(row[2]) || 0;
+        if (grade >= 4.5) distribution.A++;
+        else if (grade >= 3.5) distribution.B++;
+        else if (grade >= 2.5) distribution.C++;
+        else if (grade >= 1.5) distribution.D++;
+        else if (grade > 0) distribution.F++;
+      });
+    });
+    return distribution;
   };
 
-  const getTotalUnits = () => {
-    return tables.reduce(
-      (sum, table) =>
-        sum +
-        table.data.reduce((s, row) => {
-          const unit = parseFloat(row[1] || 0);
-          return s + (isNaN(unit) ? 0 : unit);
-        }, 0),
-      0
-    );
-  };
+  const gradeDistribution = getGradeDistribution();
 
-  // Only create chart data if we have tables
-  const gpaData = {
+  // Chart data and options
+  const semesterData = {
     labels: tables.map((table) => table.name),
     datasets: [
       {
         label: "GPA",
-        data: tables.map((table) => calculateTableGPA(table)),
-        borderColor: "#3b82f6",
-        backgroundColor: "rgba(59, 130, 246, 0.5)",
-        tension: 0.1,
+        data: tables.map((table) => calculateGPA(table)),
+        backgroundColor: "rgba(59, 130, 246, 0.8)",
+        borderColor: "rgba(59, 130, 246, 1)",
+        borderWidth: 1,
       },
     ],
   };
 
-  const gradeDistribution = getGradeDistribution();
   const gradeData = {
-    labels: ["A", "B", "C", "D", "F"],
+    labels: Object.keys(gradeDistribution),
     datasets: [
       {
         data: Object.values(gradeDistribution),
         backgroundColor: [
-          "#3b82f6", // blue
-          "#10b981", // green
-          "#f59e0b", // yellow
-          "#ef4444", // red
-          "#6b7280", // gray
+          "rgba(59, 130, 246, 0.8)",
+          "rgba(16, 185, 129, 0.8)",
+          "rgba(245, 158, 11, 0.8)",
+          "rgba(239, 68, 68, 0.8)",
+          "rgba(107, 114, 128, 0.8)",
         ],
+        borderWidth: 1,
       },
     ],
   };
 
-  const unitsData = {
-    labels: tables.map((table) => table.name),
-    datasets: [
-      {
-        label: "Credit Units",
-        data: tables.map((table) =>
-          table.data.reduce((sum, row) => {
-            const unit = parseFloat(row[1] || 0);
-            return sum + (isNaN(unit) ? 0 : unit);
-          }, 0)
-        ),
-        backgroundColor: "#3b82f6",
-      },
-    ],
-  };
-
-  const bestSemester = getBestSemester();
-  const totalUnits = getTotalUnits();
-  const totalCourses = tables.reduce(
-    (sum, table) => sum + table.data.filter((row) => row[0] !== "").length,
-    0
-  );
-
-  // Common chart options
-  const lineOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    scales: {
-      y: {
-        min: 0,
-        max: 5,
-        ticks: {
-          color: "white",
-        },
-      },
-      x: {
-        ticks: {
-          color: "white",
-        },
-      },
-    },
-    plugins: {
-      legend: {
-        labels: {
-          color: "white",
-        },
-      },
-    },
-  };
-
-  const pieOptions = {
+  const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
       legend: {
-        position: "right",
-        labels: {
-          color: "white",
-        },
-      },
-    },
-  };
-
-  const barOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    scales: {
-      y: {
-        beginAtZero: true,
-        ticks: {
-          color: "white",
-        },
-      },
-      x: {
-        ticks: {
-          color: "white",
-        },
-      },
-    },
-    plugins: {
-      legend: {
-        labels: {
-          color: "white",
-        },
+        position: "top",
       },
     },
   };
 
   return (
-    <div className="w-[100vw] min-h-screen bg-[#111827]">
-      <div className="pt-28 px-8 sm:px-12 md:px-[6vw]">
-        <h1 className="text-4xl font-bold mb-8">Analytics Dashboard</h1>
+    <div className="min-h-screenp-4 md:p-8">
+      <div className="max-w-7xl mx-auto">
+        <h1 className="text-2xl md:text-3xl font-bold mb-6 md:mb-8">
+          Hi {currentUser?.profileData?.firstName}, here's your academic
+          overview
+        </h1>
 
         {tables.length === 0 ? (
-          <div className="text-center py-16 bg-black bg-opacity-50 rounded-lg">
-            <h2 className="text-2xl font-bold text-gray-400">
-              No data available
-            </h2>
-            <p className="text-gray-500 mt-2">
-              Add some semesters to see your analytics
+          <div className="p-6 rounded-lg shadow">
+            <p className="text-gray-600">
+              No semester data available. Add semesters to see analytics.
             </p>
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-              <div className="bg-black bg-opacity-50 p-6 rounded-lg">
-                <h3 className="text-gray-400 mb-2">Total Semesters</h3>
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+              <div className=" p-4 rounded-lg shadow">
+                <h3 className="text-gray-500 text-sm">Total Semesters</h3>
                 <p className="text-2xl font-bold">{tables.length}</p>
               </div>
-              <div className="bg-black bg-opacity-50 p-6 rounded-lg">
-                <h3 className="text-gray-400 mb-2">Best Semester GPA</h3>
+              <div className=" p-4 rounded-lg shadow-xl">
+                <h3 className="text-gray-500 text-sm">Overall CGPA</h3>
                 <p className="text-2xl font-bold text-blue-600">
-                  {bestSemester?.gpa || "0.00"}
+                  {calculateCGPA()}
                 </p>
               </div>
-              <div className="bg-black bg-opacity-50 p-6 rounded-lg">
-                <h3 className="text-gray-400 mb-2">Total Units</h3>
-                <p className="text-2xl font-bold text-green-500">
-                  {totalUnits}
-                </p>
-              </div>
-              <div className="bg-black bg-opacity-50 p-6 rounded-lg">
-                <h3 className="text-gray-400 mb-2">Total Courses</h3>
-                <p className="text-2xl font-bold text-yellow-500">
-                  {totalCourses}
+              <div className=" p-4 rounded-lg shadow">
+                <h3 className="text-gray-500 text-sm">Total Courses</h3>
+                <p className="text-2xl font-bold">
+                  {tables.reduce((sum, table) => sum + table.data.length, 0)}
                 </p>
               </div>
             </div>
 
-            <div className="bg-black bg-opacity-50 p-6 rounded-lg mb-8">
-              <h2 className="text-xl font-bold mb-6">GPA Trend</h2>
-              <div className="h-[400px]">
-                <Line data={gpaData} options={lineOptions} />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-              <div className="bg-black bg-opacity-50 p-6 rounded-lg">
-                <h2 className="text-xl font-bold mb-6">Grade Distribution</h2>
-                <div className="h-[300px]">
-                  <Pie data={gradeData} options={pieOptions} />
+            {/* Charts Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              <div className="p-4 rounded-lg shadow">
+                <h2 className="text-lg font-semibold mb-4">Semester GPAs</h2>
+                <div className="h-64">
+                  <Bar data={semesterData} options={chartOptions} />
                 </div>
               </div>
-
-              <div className="bg-black bg-opacity-50 p-6 rounded-lg">
-                <h2 className="text-xl font-bold mb-6">
-                  Credit Units per Semester
+              <div className="p-4 rounded-lg shadow">
+                <h2 className="text-lg font-semibold mb-4">
+                  Grade Distribution
                 </h2>
-                <div className="h-[300px]">
-                  <Bar data={unitsData} options={barOptions} />
+                <div className="h-64">
+                  <Pie data={gradeData} options={chartOptions} />
                 </div>
               </div>
             </div>
 
-            <div className="bg-black bg-opacity-50 p-6 rounded-lg mb-8">
-              <h2 className="text-xl font-bold mb-6">Performance Details</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div className="p-4 bg-opacity-50 bg-blue-900 rounded-lg">
-                  <h3 className="text-gray-300 mb-2">
-                    Best Performing Semester
-                  </h3>
-                  <p className="text-xl font-bold">
-                    {bestSemester?.name || "N/A"} ({bestSemester?.gpa || "0.00"}
-                    )
-                  </p>
-                </div>
-                <div className="p-4 bg-opacity-50 bg-blue-900 rounded-lg">
-                  <h3 className="text-gray-300 mb-2">Total A Grades</h3>
-                  <p className="text-xl font-bold">
-                    {gradeDistribution.A} courses
-                  </p>
-                </div>
-                <div className="p-4 bg-opacity-50 bg-blue-900 rounded-lg">
-                  <h3 className="text-gray-300 mb-2">Average Units/Semester</h3>
-                  <p className="text-xl font-bold">
-                    {tables.length
-                      ? (totalUnits / tables.length).toFixed(1)
-                      : "0"}{" "}
-                    units
-                  </p>
-                </div>
+            {/* Grade Breakdown */}
+            <div className="p-4 rounded-lg shadow">
+              <h2 className="text-lg font-semibold mb-4">Grade Breakdown</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+                {Object.entries(gradeDistribution).map(([grade, count]) => (
+                  <div
+                    key={grade}
+                    className="text-center p-3 rounded-lg"
+                  >
+                    <div className="text-2xl font-bold">{count}</div>
+                    <div className="text-gray-500">Grade {grade}</div>
+                  </div>
+                ))}
               </div>
             </div>
           </>
