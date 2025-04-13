@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../context/AuthContext";
-import { Trash2 } from "lucide-react";
+import { Trash2, Upload } from "lucide-react";
+import PDFUploader from "../Components/PDFUploader"; // Adjust the import path as necessary
 import debounce from "lodash/debounce";
 
 const STORAGE_KEY = "cgpaCalculatorTables";
@@ -257,9 +258,11 @@ const Home = () => {
         </button>
       </div>
 
+      <PDFUploader/>
+
       <p className="text-2xl font-bold mb-8">
         CGPA: <span className="text-blue-600">{calculateCGPA()}</span> | Total
-        Units: <span className="text-blue-600">{calculateTotalUnits()}</span> | 
+        Units: <span className="text-blue-600">{calculateTotalUnits()}</span> |
         Total Score:{" "}
         <span className="text-blue-600">{calculateTotalScore()}</span>
       </p>
