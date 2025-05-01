@@ -113,9 +113,9 @@ const Analytics = () => {
   };
 
   return (
-    <div className="min-h-screenp-4 md:p-8">
+    <div className=" p-[4vw] md:p-8 w-full mx-auto">
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-2xl md:text-3xl font-bold mb-6 md:mb-8">
+        <h1 className="text-3xl mt-32 md:text-4xl font-bold mb-6 md:mb-8">
           Hi {currentUser?.profileData?.firstName}, here's your academic
           overview
         </h1>
