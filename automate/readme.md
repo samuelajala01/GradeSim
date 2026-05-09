@@ -4,14 +4,14 @@ create a courses.json file and use the format below
 ```
 // [course code, credit units, grade]
 {
-    "100L": [
+    "100L 1st Semester": [
       ["CHM101", 3, 4],
       ["CHM103", 1, 5],
       ["CSC111", 3, 5],
       ["GNS101", 2, 5],
 
     ],
-    "200L": [
+    "200L 1st semester": [
       ["CPE201", 2, 5],
       ["CPE211", 1, 4],
       ["ECE201", 3, 5],

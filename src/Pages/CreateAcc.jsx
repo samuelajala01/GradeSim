@@ -1,10 +1,14 @@
-// src/pages/SignUp.jsx
-import React, { useState } from "react";
+import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { createUserDocument } from "../utils/firestore";
+import { Card, CardHeader } from "../Components/ui/Card";
+import { Input } from "../Components/ui/Input";
+import { Label } from "../Components/ui/Input";
+import { Select } from "../Components/ui/Input";
+import { Button } from "../Components/ui/Button";
 
-const CreateAcc = () => {
+export default function CreateAcc() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [course, setCourse] = useState("");
@@ -13,205 +17,144 @@ const CreateAcc = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
   const { signup } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-  
-    if (password !== confirmPassword) {
-      return setError('Passwords do not match');
-    }
-  
+    setError("");
+    if (password !== confirmPassword)
+      return setError("Passwords do not match");
+    const userData = {
+      firstName,
+      lastName,
+      course,
+      educationLevel,
+    };
+    setBusy(true);
     try {
-      const userData = {
-        firstName,
-        lastName,
-        course,
-        educationLevel
-      };
-  
       const result = await signup(email, password, userData);
-     
-      navigate('/');
+      try {
+        await createUserDocument(result.user.uid, { ...userData, email });
+      } catch (docErr) {
+        console.warn("Firestore profile skipped:", docErr);
+      }
+      navigate("/");
     } catch (err) {
-      console.error("Signup error:", err);
-      setError(err.message);
+      console.error(err);
+      setError(err.message || "Sign up failed");
+    } finally {
+      setBusy(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center text-white bg-['#111827'] py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-2xl w-full space-y-8">
-        <div>
-          <h2 className="text-center text-3xl font-extrabold">
-            Create Your Account
-          </h2>
-        </div>
+    <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-background">
+      <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-thin">
+        <CardHeader title="Create account" description="Set up GradeSim tracking." />
+
         <form className="space-y-6" onSubmit={handleSubmit}>
-          {/* First and Last Name in a Row */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div className="grid gap-6 sm:grid-cols-2">
             <div>
-              <label
-                htmlFor="first-name"
-                className="block text-sm font-medium text-white"
-              >
-                First Name
-              </label>
-              <input
+              <Label htmlFor="first-name">First name</Label>
+              <Input
                 id="first-name"
-                type="text"
                 required
-                className="mt-1 p-2 block w-full rounded-md border-blue-600 border-2 shadow-sm sm:text-sm"
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
               />
             </div>
             <div>
-              <label
-                htmlFor="last-name"
-                className="block text-sm font-medium text-white"
-              >
-                Last Name
-              </label>
-              <input
+              <Label htmlFor="last-name">Last name</Label>
+              <Input
                 id="last-name"
-                type="text"
                 required
-                className="mt-1 p-2 block w-full rounded-md border-blue-600 border-2 shadow-sm text-white sm:text-sm"
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
               />
             </div>
           </div>
 
-          {/* Course */}
           <div>
-            <label
-              htmlFor="course"
-              className="block text-sm font-medium text-white"
-            >
-              Course
-            </label>
-            <input
+            <Label htmlFor="course">Program / course focus</Label>
+            <Input
               id="course"
-              type="text"
               required
-              className="mt-1 p-2 block w-full rounded-md border-blue-600 border-2 bg-[''] shadow-sm text-white sm:text-sm"
               value={course}
               onChange={(e) => setCourse(e.target.value)}
             />
           </div>
 
-          {/* Education Level */}
           <div>
-            <label
-              htmlFor="education-level"
-              className="block text-sm font-medium text-white"
-            >
-              Education Level
-            </label>
-            <select
+            <Label htmlFor="education-level">Education level</Label>
+            <Select
               id="education-level"
               required
-              className="mt-1 p-2 block w-full rounded-md border-blue-600 border-2 bg-['#111827'] shadow-sm sm:text-sm"
               value={educationLevel}
               onChange={(e) => setEducationLevel(e.target.value)}
             >
-              <option value="">Select Education Level</option>
-              <option value="high-school">High School</option>
+              <option value="">Choose one</option>
+              <option value="high-school">High school</option>
               <option value="undergraduate">Undergraduate</option>
               <option value="graduate">Graduate</option>
               <option value="postgraduate">Postgraduate</option>
-            </select>
+            </Select>
           </div>
 
-          {/* Email */}
           <div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-white"
-            >
-              Email Address
-            </label>
-            <input
+            <Label htmlFor="email">Email</Label>
+            <Input
               id="email"
               type="email"
               required
-              className="mt-1 p-2 block w-full rounded-md border-blue-600 border-2 bg-[''] shadow-sm text-white sm:text-sm"
+              autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
           </div>
 
-          {/* Password and Confirm Password in a Row */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div className="grid gap-6 sm:grid-cols-2">
             <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-white"
-              >
-                Password
-              </label>
-              <input
+              <Label htmlFor="password">Password</Label>
+              <Input
                 id="password"
                 type="password"
                 required
-                className="mt-1 p-2 block w-full rounded-md border-blue-600 border-2 bg-[''] shadow-sm sm:text-sm"
+                autoComplete="new-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
             <div>
-              <label
-                htmlFor="confirm-password"
-                className="block text-sm font-medium text-white"
-              >
-                Confirm Password
-              </label>
-              <input
+              <Label htmlFor="confirm-password">Confirm password</Label>
+              <Input
                 id="confirm-password"
                 type="password"
                 required
-                className="mt-1 p-2 block w-full rounded-md border-blue-600 border-2 bg-[''] shadow-sm text-white sm:text-sm"
+                autoComplete="new-password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
               />
             </div>
           </div>
 
-          {/* Error Message */}
           {error && (
-            <div className="text-red-500 text-center text-sm">{error}</div>
+            <p className="text-sm text-danger text-center">{error}</p>
           )}
 
-          {/* Submit Button */}
-          <div>
-            <button
-              type="submit"
-              className="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              Sign Up
-            </button>
-          </div>
+          <Button type="submit" disabled={busy} className="w-full">
+            {busy ? "Creating account…" : "Sign up"}
+          </Button>
         </form>
 
-        {/* Log In Link */}
-        <div className="text-center">
-          <p className="text-sm text-gray-600">
-            Already have an account?{" "}
-            <Link
-              to="/login"
-              className="font-medium text-indigo-600 hover:text-indigo-500"
-            >
-              Log in
-            </Link>
-          </p>
-        </div>
-      </div>
+        <p className="text-sm text-muted text-center mt-8">
+          Already registered?{" "}
+          <Link to="/login" className="text-accent font-medium hover:text-accent-hover">
+            Log in
+          </Link>
+        </p>
+      </Card>
     </div>
   );
-};
-
-export default CreateAcc;
+}

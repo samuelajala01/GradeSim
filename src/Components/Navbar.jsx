@@ -1,11 +1,18 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Menu, X } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
+import { Button } from "./ui/Button";
 
-const Navbar = () => {
-  const [isOpen, setIsOpen] = useState(false);
+const links = [
+  { to: "/", label: "Dashboard" },
+  { to: "/analytics", label: "Analytics" },
+  { to: "/predictor", label: "Predictor" },
+  { to: "/settings", label: "Settings" },
+];
+
+export default function Navbar() {
+  const [open, setOpen] = useState(false);
   const { logout } = useAuth();
   const navigate = useNavigate();
 
@@ -14,89 +21,77 @@ const Navbar = () => {
       await logout();
       navigate("/login");
     } catch (error) {
-      console.error("Failed to logout:", error);
+      console.error(error);
     }
-  };
-
-  const toggleMenu = () => {
-    setIsOpen(!isOpen);
   };
 
   return (
     <>
-      {/* Mobile Menu Button */}
-      <button 
-        onClick={toggleMenu} 
-        className="fixed top-4 right-4 p-2 rounded bg-[#161925] lg:hidden z-50"
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="fixed top-4 right-4 z-50 lg:hidden rounded-md border border-border bg-surface p-2.5 shadow-card text-foreground"
+        aria-expanded={open}
+        aria-label="Toggle menu"
       >
-        {isOpen ? <X size={24} /> : <Menu size={24} />}
+        {open ? <X size={22} /> : <Menu size={22} />}
       </button>
 
-      {/* Navbar */}
-      <div className={`
-        fixed top-0 left-0 h-full w-64 bg-[#161925] p-4 text-center shadow-md
-        transform transition-transform duration-300 ease-in-out z-40
-        lg:transform-none lg:relative
-        ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-      `}>
-        <h1 className="text-white text-2xl font-bold mt-4 mb-8">
-          Grade<span className="text-blue-600">Sim</span>
-        </h1>
-        <nav className="space-y-2">
+      <aside
+        className={[
+          "fixed lg:sticky top-0 z-40 h-screen w-56 shrink-0 border-r border-border bg-surface",
+          "flex flex-col px-4 py-8 lg:translate-x-0 shadow-card lg:shadow-none transition-transform duration-300",
+          open ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
+        ].join(" ")}
+      >
+        <div className="px-3 mb-10">
           <Link
             to="/"
-            onClick={() => setIsOpen(false)}
-            className="text-white block px-4 md:px-16 py-2 hover:bg-[#111827] rounded transition-colors"
+            className="text-xl font-semibold tracking-tight text-foreground"
+            onClick={() => setOpen(false)}
           >
-            Dashboard
+            Grade<span className="text-accent">Sim</span>
           </Link>
-          <Link
-            to="/analytics"
-            onClick={() => setIsOpen(false)}
-            className="text-white block px-4 md:px-16 py-2 hover:bg-[#111827] rounded transition-colors"
-          >
-            Analytics
-          </Link>
-          <Link
-            to="/predictor"
-            onClick={() => {
-              setIsOpen(false);
-            }}
-            className="text-white block px-4 md:px-16 py-2 hover:bg-[#111827] rounded transition-colors"
-          >
-            Grade Predictor
-          </Link>
-          <Link
-            to="/settings"
-            onClick={() => {
-              setIsOpen(false);
-            }}
-            className="text-white block px-4 md:px-16 py-2 hover:bg-[#111827] rounded transition-colors"
-          >
-            Settings
-          </Link>
-          <Link
-            to="/login"
+          <p className="text-xs text-muted mt-1 leading-snug">
+            GPA planner & importer
+          </p>
+        </div>
+
+        <nav className="flex flex-col gap-1 flex-1">
+          {links.map(({ to, label }) => (
+            <Link
+              key={to}
+              to={to}
+              onClick={() => setOpen(false)}
+              className="rounded-md px-3 py-2.5 text-sm font-medium text-foreground hover:bg-surface-elevated border border-transparent hover:border-border transition-colors"
+            >
+              {label}
+            </Link>
+          ))}
+        </nav>
+
+        <div className="mt-auto pt-4 border-t border-border">
+          <Button
+            variant="ghost"
+            className="w-full justify-start text-muted hover:text-foreground"
             onClick={() => {
               handleLogout();
-              setIsOpen(false);
+              setOpen(false);
             }}
-            className="text-white block px-4 md:px-16 py-2 hover:bg-[#111827] rounded transition-colors"
           >
-            Logout
-          </Link>
-        </nav>
-      </div>
+            Log out
+          </Button>
+        </div>
+      </aside>
 
-      {/* Overlay for mobile */}
-      {isOpen && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
-          onClick={() => setIsOpen(false)}
+      {open && (
+        <button
+          type="button"
+          className="fixed inset-0 z-30 bg-black/40 lg:hidden"
+          aria-label="Close menu"
+          onClick={() => setOpen(false)}
         />
       )}
     </>
   );
-};
-
-export default Navbar;
+}
