@@ -1,296 +1,273 @@
-import { useState, useCallback, useEffect } from "react";
-import { useDropzone } from "react-dropzone";
-import { FileUp } from "lucide-react";
-import { Button } from "./ui/Button";
-import { Card } from "./ui/Card";
-import { Input } from "./ui/Input";
-import { Label } from "./ui/Input";
-import { Select } from "./ui/Input";
-import { Badge } from "./ui/Badge";
+// src/Components/ImportCoursesPanel.jsx
+// Adjust utility import paths if needed (e.g. ../lib/ instead of ../utils/)
+
+import { useState, useEffect, useRef } from "react";
+import { Upload, Loader2, AlertTriangle, CheckCircle } from "lucide-react";
 import { useGradeData } from "../context/GradeDataContext";
+import { COL } from "../domain/grades";
 import { extractTextFromFile } from "../services/fileExtract";
 import { parseTranscriptHeuristic } from "../services/transcriptHeuristic";
 import { parseTranscriptWithGemini } from "../services/transcriptGemini";
+import { Card, CardHeader } from "./ui/Card";
+import { Button } from "./ui/Button";
+import { Input } from "./ui/Input";
 
-/** Browsers often omit or mislabel MIME types; include common fallbacks so files are not silently rejected. */
-const ACCEPT = {
-  "application/pdf": [".pdf"],
-  "application/x-pdf": [".pdf"],
-  "application/octet-stream": [".pdf", ".csv", ".txt"],
-  "text/plain": [".txt", ".csv"],
-  "text/csv": [".csv"],
-};
-
-const geminiKey = () => import.meta.env.VITE_GEMINI_API_KEY || "";
-
-async function mergeParseResults(text, useGeminiFlag) {
-  const key = geminiKey();
-
-  if (useGeminiFlag && key) {
-    const ai = await parseTranscriptWithGemini(text, key);
-    if (!ai.error && ai.courses.length > 0) {
-      return {
-        courses: ai.courses,
-        warnings: ["AI-assisted parse — review each row before merging."],
-      };
-    }
-    const heur = parseTranscriptHeuristic(text);
-    const w = [...heur.warnings];
-    if (ai.error) w.unshift(`Gemini: ${ai.error}`);
-    else if (!ai.courses.length) w.unshift("Gemini returned no courses.");
-    return { courses: heur.courses, warnings: w };
-  }
-
-  return parseTranscriptHeuristic(text);
-}
+const GEMINI_KEY = import.meta.env.VITE_GEMINI_API_KEY ?? "";
 
 export function ImportCoursesPanel() {
-  const { tables, importCourses } = useGradeData();
-  const [courses, setCourses] = useState([]);
+  const { tables, addSemester, batchImportCourses } = useGradeData();
+
+  const [phase, setPhase] = useState("idle"); // idle | extracting | preview | importing | done
+  const [parsed, setParsed] = useState([]);
   const [warnings, setWarnings] = useState([]);
-  const [error, setError] = useState(null);
-  const [busy, setBusy] = useState(false);
-  const [useGemini, setUseGemini] = useState(false);
-  /** 'new' | number (append indices) */
-  const [mergeTarget, setMergeTarget] = useState("new");
-  const [newSemesterName, setNewSemesterName] = useState("Imported semester");
+  const [error, setError] = useState("");
+  const [targetIdx, setTargetIdx] = useState(0);   // -1 = create new semester
+  const [newName, setNewName] = useState("");
+  const [aiMode, setAiMode] = useState(false);
+  const [pendingImport, setPendingImport] = useState(null); // { idx, courses }
+  const fileRef = useRef(null);
 
-  const runParseOnText = useCallback(async (text) => {
-    setError(null);
-    const result = await mergeParseResults(text, useGemini);
-    setCourses(result.courses);
-    setWarnings(result.warnings);
-    if (!result.courses.length && !result.warnings.some((x) => /gemini/i.test(x)))
-      setWarnings([
-        ...(result.warnings || []),
-        "No rows found. Toggle AI assist if your transcript layout is irregular.",
-      ]);
-  }, [useGemini]);
+  // After addSemester commits to state, the pending import fires here.
+  // This avoids reading stale tables.length immediately after addSemester().
+  useEffect(() => {
+    if (!pendingImport) return;
+    const { idx, courses } = pendingImport;
+    if (idx >= tables.length) return; // semester not in state yet — wait
+    batchImportCourses(idx, courses);
+    setPendingImport(null);
+    setPhase("done");
+    setTimeout(reset, 2000);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tables.length, pendingImport]);
 
-  const onDrop = useCallback(
-    async (acceptedFiles, fileRejections) => {
-      setCourses([]);
-      setWarnings([]);
-      setError(null);
+  function reset() {
+    setPhase("idle");
+    setParsed([]);
+    setWarnings([]);
+    setError("");
+    setNewName("");
+    if (fileRef.current) fileRef.current.value = "";
+  }
 
-      const rejectionHints = fileRejections.map((r) => {
-        const bits = (r.errors || []).map((e) => `${e.code}: ${e.message}`);
-        return `${r.file?.name ?? "file"} — ${bits.join("; ")}`;
-      });
+  async function handleFile(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-      if (!acceptedFiles.length) {
-        if (rejectionHints.length)
-          setError(rejectionHints.join(" · ") || "File type not accepted.");
+    setPhase("extracting");
+    setError("");
+    setParsed([]);
+    setWarnings([]);
+
+    try {
+      const text = await extractTextFromFile(file);
+
+      let result;
+      if (aiMode && GEMINI_KEY) {
+        result = await parseTranscriptWithGemini(text, GEMINI_KEY);
+        if (result.error || result.courses.length === 0) {
+          const fallback = parseTranscriptHeuristic(text);
+          setWarnings([
+            `AI failed${result.error ? ": " + result.error : ""}. Falling back to heuristic.`,
+            ...(fallback.warnings ?? []),
+          ]);
+          result = fallback;
+        }
+      } else {
+        result = parseTranscriptHeuristic(text);
+        setWarnings(result.warnings ?? []);
+      }
+
+      if (!result.courses.length) {
+        setError("No courses parsed. Try CSV/TXT format or enable AI assist.");
+        setPhase("idle");
         return;
       }
 
-      setBusy(true);
-      try {
-        const textParts = [];
-        for (const f of acceptedFiles) {
-          textParts.push(await extractTextFromFile(f));
-        }
-        const combined = textParts.join("\n\n--- next file ---\n\n");
-        await runParseOnText(combined);
-        if (rejectionHints.length > 0) {
-          const note = [
-            `${rejectionHints.length} file(s) skipped (wrong type):`,
-            ...rejectionHints,
-          ];
-          setWarnings((prev) => [...note, ...prev]);
-        }
-      } catch (e) {
-        console.error(e);
-        setError(e.message || "Failed to read file.");
-      } finally {
-        setBusy(false);
-      }
-    },
-    [runParseOnText]
-  );
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: ACCEPT,
-    maxFiles: 5,
-    disabled: busy,
-    validator: (file) => {
-      const n = (file.name || "").toLowerCase();
-      if (/\.(pdf|txt|csv)$/i.test(n)) return null;
-      return {
-        code: "file-invalid-type",
-        message: "Use a .pdf, .txt, or .csv file.",
-      };
-    },
-  });
-
-  const handleApply = () => {
-    if (!courses.length) return;
-
-    if (mergeTarget === "new") {
-      importCourses("new", courses, newSemesterName);
-    } else {
-      const idx = typeof mergeTarget === "number"
-        ? mergeTarget
-        : parseInt(String(mergeTarget), 10);
-      if (!Number.isFinite(idx) || idx < 0 || idx >= tables.length) return;
-      importCourses(idx, courses, null);
+      setParsed(result.courses);
+      setTargetIdx(tables.length > 0 ? 0 : -1);
+      setPhase("preview");
+    } catch (err) {
+      setError(err.message || "Failed to read file.");
+      setPhase("idle");
     }
-    setCourses([]);
-    setWarnings([]);
-  };
+  }
 
-  const geminiAvailable = !!geminiKey();
+  function handleImport() {
+    if (!parsed.length) return;
 
-  useEffect(() => {
-    setMergeTarget((prev) => {
-      if (!tables.length) return "new";
-      if (prev === "new") return prev;
-      if (typeof prev === "number" && prev >= tables.length)
-        return Math.min(prev, tables.length - 1);
-      return prev;
-    });
-  }, [tables.length]);
+    if (targetIdx === -1) {
+      const name = newName.trim();
+      if (!name) {
+        setError("Enter a name for the new semester.");
+        return;
+      }
+      const expectedIdx = tables.length; // addSemester will append here
+      addSemester(name);
+      setPendingImport({ idx: expectedIdx, courses: parsed }); // useEffect takes it from here
+      setPhase("importing");
+      return;
+    }
+
+    batchImportCourses(targetIdx, parsed);
+    setPhase("done");
+    setTimeout(reset, 2000);
+  }
 
   return (
     <Card className="mb-10">
-      <h3 className="text-base font-semibold text-foreground mb-1">
-        Import from file
-      </h3>
-      <p className="text-sm text-muted mb-4">
-        Upload PDF, CSV, or TXT. Text is extracted and parsed into credits and
-        grade points — verify the preview before merging into a semester.
-      </p>
+      <CardHeader
+        title="Import courses"
+        description="Upload a PDF, CSV, or TXT transcript to bulk-fill a semester."
+      />
 
-      <div className="mb-4">
-        {geminiAvailable ? (
-          <label className="flex items-center gap-2 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              className="rounded border-border text-accent focus:ring-accent bg-surface-elevated"
-              checked={useGemini}
-              onChange={(e) => setUseGemini(e.target.checked)}
-            />
-            <span className="text-sm text-foreground inline-flex items-center gap-2">
-              Use Gemini to interpret
-              <Badge variant="accent">AI</Badge>
+      <div className="space-y-4 pb-2">
+        {/* AI toggle */}
+        <label className="inline-flex items-center gap-2 text-sm text-muted cursor-pointer select-none">
+          <input
+            type="checkbox"
+            className="accent-accent"
+            checked={aiMode}
+            onChange={(e) => setAiMode(e.target.checked)}
+          />
+          Use AI assist (Gemini)
+          {aiMode && !GEMINI_KEY && (
+            <span className="text-danger text-xs ml-1">
+              — VITE_GEMINI_API_KEY not set
             </span>
-          </label>
-        ) : (
-          <p className="text-xs text-muted">
-            Tip: Set <code className="text-accent">VITE_GEMINI_API_KEY</code> for
-            optional AI parsing (client-exposed keys should be tightly scoped).
-          </p>
-        )}
-      </div>
-
-      <div
-        {...getRootProps()}
-        className={`border-2 border-dashed rounded-md px-6 py-8 text-center cursor-pointer transition-colors
-          ${isDragActive ? "border-accent bg-accent/5" : "border-border hover:border-muted bg-surface-elevated"}
-          ${busy ? "opacity-60 pointer-events-none" : ""}`}
-      >
-        <input {...getInputProps()} />
-        <div className="flex flex-col items-center gap-2">
-          <FileUp className="h-9 w-9 text-accent" aria-hidden />
-          {isDragActive ? (
-            <p className="text-sm text-foreground">Drop files here …</p>
-          ) : (
-            <p className="text-sm text-muted">
-              Drag & drop PDF, CSV, or TXT — or click to browse
-            </p>
           )}
-        </div>
-      </div>
+        </label>
 
-      {busy && (
-        <p className="text-sm text-muted mt-3">Extracting text…</p>
-      )}
-      {error && <p className="text-sm text-danger mt-3">{error}</p>}
+        {/* Upload zone — only shown when idle */}
+        {phase === "idle" && (
+          <label className="flex flex-col items-center justify-center border-2 border-dashed border-border rounded-lg py-10 cursor-pointer hover:border-accent transition-colors">
+            <Upload size={22} className="text-muted mb-2" />
+            <span className="text-sm text-muted">
+              Click to upload{" "}
+              <strong className="text-foreground">PDF, CSV, or TXT</strong>
+            </span>
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".pdf,.csv,.txt"
+              className="hidden"
+              onChange={handleFile}
+            />
+          </label>
+        )}
 
-      {warnings.length > 0 && (
-        <ul className="mt-3 text-xs text-muted list-disc list-inside space-y-1 max-h-28 overflow-auto scrollbar-thin">
-          {warnings.map((w, i) => (
-            <li key={i}>{w}</li>
-          ))}
-        </ul>
-      )}
-
-      {courses.length > 0 && (
-        <>
-          <div className="mt-4 overflow-x-auto max-h-52 overflow-y-auto scrollbar-thin rounded-md border border-border">
-            <table className="w-full text-sm text-left">
-              <thead className="sticky top-0 bg-surface-elevated border-b border-border">
-                <tr>
-                  <th className="p-2 font-medium text-foreground">Course</th>
-                  <th className="p-2 font-medium text-foreground">Credits</th>
-                  <th className="p-2 font-medium text-foreground">Grade</th>
-                </tr>
-              </thead>
-              <tbody>
-                {courses.map((c, i) => (
-                  <tr key={i} className="border-b border-border/60">
-                    <td className="p-2 text-foreground">{c.courseName}</td>
-                    <td className="p-2 text-foreground">{c.credits}</td>
-                    <td className="p-2 text-foreground">{c.grade}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {/* Loading states */}
+        {(phase === "extracting" || phase === "importing") && (
+          <div className="flex items-center gap-2 text-muted text-sm py-4">
+            <Loader2 size={16} className="animate-spin" />
+            {phase === "extracting" ? "Extracting text…" : "Importing courses…"}
           </div>
+        )}
 
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <div>
-              <Label htmlFor="merge-target">Merge into</Label>
-              <Select
-                id="merge-target"
-                value={
-                  mergeTarget === "new" ? "new" : String(mergeTarget)
-                }
-                onChange={(e) => {
-                  const v = e.target.value;
-                  setMergeTarget(v === "new" ? "new" : parseInt(v, 10));
-                }}
+        {/* Success */}
+        {phase === "done" && (
+          <div className="flex items-center gap-2 text-sm py-4">
+            <CheckCircle size={16} className="text-accent" />
+            <span className="text-muted">
+              Imported{" "}
+              <strong className="text-foreground">{parsed.length}</strong>{" "}
+              course{parsed.length !== 1 ? "s" : ""} successfully.
+            </span>
+          </div>
+        )}
+
+        {/* Error */}
+        {error && (
+          <div className="flex items-start gap-2 text-danger text-sm rounded-md bg-surface-elevated border border-border p-3">
+            <AlertTriangle size={15} className="shrink-0 mt-0.5" />
+            {error}
+          </div>
+        )}
+
+        {/* Parse warnings */}
+        {warnings.length > 0 && (
+          <details className="text-xs text-muted border border-border rounded-md px-3 py-2">
+            <summary className="cursor-pointer">
+              {warnings.length} parsing warning{warnings.length !== 1 ? "s" : ""} — expand
+            </summary>
+            <ul className="mt-2 space-y-1 pl-3 list-disc">
+              {warnings.map((w, i) => (
+                <li key={i}>{w}</li>
+              ))}
+            </ul>
+          </details>
+        )}
+
+        {/* Preview & semester selection */}
+        {phase === "preview" && parsed.length > 0 && (
+          <div className="space-y-4">
+            <p className="text-sm text-muted">
+              <strong className="text-foreground">{parsed.length}</strong> course
+              {parsed.length !== 1 ? "s" : ""} detected. Select a semester:
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-2">
+              <select
+                className="rounded-md border border-border bg-surface text-foreground text-sm px-3 py-2 flex-1 focus:outline-none focus:ring-1 focus:ring-accent"
+                value={targetIdx}
+                onChange={(e) => setTargetIdx(Number(e.target.value))}
               >
-                <option value="new">New semester</option>
-                {tables.map((t, idx) => (
-                  <option key={idx} value={String(idx)}>
+                {tables.map((t, i) => (
+                  <option key={i} value={i}>
                     {t.name}
                   </option>
                 ))}
-              </Select>
-            </div>
-            {mergeTarget === "new" ? (
-              <div>
-                <Label htmlFor="new-sem-name">Semester name</Label>
-                <Input
-                  id="new-sem-name"
-                  value={newSemesterName}
-                  onChange={(e) => setNewSemesterName(e.target.value)}
-                />
-              </div>
-            ) : (
-              <div className="hidden sm:block" aria-hidden />
-            )}
-          </div>
+                <option value={-1}>+ New semester…</option>
+              </select>
 
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Button type="button" onClick={handleApply}>
-              Merge {courses.length} course{courses.length === 1 ? "" : "s"}
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => {
-                setCourses([]);
-                setWarnings([]);
-              }}
-            >
-              Clear preview
-            </Button>
+              {targetIdx === -1 && (
+                <Input
+                  placeholder="Semester name (e.g. First Semester 24/25)"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  className="flex-1"
+                />
+              )}
+            </div>
+
+            {/* Course preview table */}
+            <div className="overflow-auto rounded-md border border-border max-h-56 scrollbar-thin">
+              <table className="w-full text-sm">
+                <thead className="sticky top-0 bg-surface-elevated border-b border-border">
+                  <tr>
+                    <th className="p-2 text-left font-medium text-muted">Course</th>
+                    <th className="p-2 text-center font-medium text-muted w-20">Credits</th>
+                    <th className="p-2 text-center font-medium text-muted w-24">Grade pts</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {parsed.map((c, i) => (
+                    <tr
+                      key={i}
+                      className="border-b border-border/50 hover:bg-surface-elevated/70"
+                    >
+                      <td className="p-2 text-foreground">{c.courseName}</td>
+                      <td className="p-2 text-center tabular-nums">{c.credits}</td>
+                      <td className="p-2 text-center tabular-nums text-accent">{c.grade}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="flex gap-2">
+              <Button onClick={handleImport}>
+                Import to{" "}
+                {targetIdx === -1
+                  ? `"${newName.trim() || "new semester"}"`
+                  : `"${tables[targetIdx]?.name}"`}
+              </Button>
+              <Button variant="secondary" onClick={reset}>
+                Cancel
+              </Button>
+            </div>
           </div>
-        </>
-      )}
+        )}
+      </div>
     </Card>
   );
 }
